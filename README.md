@@ -22,7 +22,7 @@ streamlit run app.py
 3. Review held-out metrics and choose a fraud probability threshold.
 4. Upload an unlabeled transactions CSV and download the scored results.
 
-The app follows the notebook by excluding direct identifiers and one-hot encoding categorical fields. It extracts calendar features from `trans_date_trans_time` and balances only the training split by undersampling legitimate transactions; held-out metrics retain the original class distribution. The provided `fraudTest.csv` is about 150 MB and is intentionally excluded from Git; upload it in the app, or use a smaller sample for faster training.
+The app follows the notebook by excluding direct identifiers and one-hot encoding categorical fields. It extracts calendar features from `trans_date_trans_time` and balances only the training split by undersampling legitimate transactions; held-out metrics retain the original class distribution. The provided `fraudTest.csv` is about 150 MB and is stored in GitHub using Git LFS. Upload it in the app to train, or use a smaller sample for faster training.
 
 ## Deploy to Streamlit Community Cloud
 

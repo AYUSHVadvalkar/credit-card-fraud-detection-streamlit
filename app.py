@@ -3,10 +3,6 @@
 from __future__ import annotations
 
 import io
-import re
-from datetime import datetime
-
-import numpy as np
 import pandas as pd
 import streamlit as st
 from sklearn.compose import ColumnTransformer
@@ -107,14 +103,24 @@ def stratified_sample(features: pd.DataFrame, target: pd.Series, maximum: int) -
     if len(features) <= maximum:
         return features, target
     # Retain every fraud row where practical, and sample the much larger legitimate class.
-    fraud = target.astype(int) == 1
-    fraud_n = int(fraud.sum())
-    if fraud_n >= maximum:
-        keep = target.groupby(target).sample(n=max(1, maximum // 2), random_state=42).index
+    fraud_idx = target[target == 1].index
+    legitimate_idx = target[target == 0].index
+    if len(fraud_idx) >= maximum:
+        fraud_idx = target.loc[fraud_idx].sample(n=maximum // 2, random_state=42).index
+        legitimate_idx = target.loc[legitimate_idx].sample(n=maximum - len(fraud_idx), random_state=42).index
     else:
-        negative_n = max(1, maximum - fraud_n)
-        negative_idx = target[~fraud].sample(n=min(negative_n, int((~fraud).sum())), random_state=42).index
-        keep = target[fraud].index.union(negative_idx)
+        legitimate_idx = target.loc[legitimate_idx].sample(
+            n=min(maximum - len(fraud_idx), len(legitimate_idx)), random_state=42
+        ).index
+    keep = fraud_idx.union(legitimate_idx)
+    return features.loc[keep], target.loc[keep]
+
+
+def balance_training_rows(features: pd.DataFrame, target: pd.Series) -> tuple[pd.DataFrame, pd.Series]:
+    """Undersample only the training split; keep the test split at its natural prevalence."""
+    fraud_idx = target[target == 1].index
+    legitimate_idx = target[target == 0].sample(n=len(fraud_idx), random_state=42).index
+    keep = fraud_idx.union(legitimate_idx)
     return features.loc[keep], target.loc[keep]
 
 
@@ -156,6 +162,7 @@ if train_file is not None:
             x_train, x_test, y_train, y_test = train_test_split(
                 features, labels, test_size=0.2, random_state=42, stratify=labels
             )
+            x_train, y_train = balance_training_rows(x_train, y_train)
             model = make_pipeline(x_train)
             with st.spinner("Training the neural network…"):
                 model.fit(x_train, y_train)
